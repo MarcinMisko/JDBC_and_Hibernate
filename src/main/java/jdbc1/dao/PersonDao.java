@@ -6,7 +6,9 @@ import jdbc1.model.Pet;
 import javax.swing.plaf.synth.SynthOptionPaneUI;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class PersonDao {
     private Connection dbConnection;
@@ -103,4 +105,38 @@ public class PersonDao {
         }
         return adultPersonsList;
     }
+
+    public List<Person> readPersonsWithPets() {
+        List<Person> result = new ArrayList<>();
+        String query = "select p.ID, p.NAME, p.SURNAME, p.AGE, pt.ID, pt.NAME, pt.AGE, pt.KIND\n" +
+                "from PERSON p\n" +
+                "left join PET pt on (pt.OWNER_ID = p.ID)";
+        try {
+            Person personFromDb;
+            Statement statement = dbConnection.createStatement();
+            Map<Integer, Person> idOverPerson = new HashMap<>();
+            ResultSet dbResult = statement.executeQuery(query);
+            int personId = dbResult.getInt(1);
+
+            Pet petFromDb;
+            if (!idOverPerson.containsKey(personId)) {
+                personFromDb = new Person(dbResult.getString(1), dbResult.getString(2), dbResult.getInt(3), personId);
+
+                idOverPerson.put(personId, personFromDb);
+
+                petFromDb = new Pet(dbResult.getInt(5), dbResult.getString(6), dbResult.getString(7), dbResult.getInt(8));
+                personFromDb.addPet(petFromDb);
+            }else {
+                personFromDb = idOverPerson.get(personId);
+                petFromDb = new Pet(dbResult.getInt(5), dbResult.getString(6), dbResult.getString(7), dbResult.getInt(8));
+                personFromDb.addPet(petFromDb);
+
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return result;
+    }
+
 }
